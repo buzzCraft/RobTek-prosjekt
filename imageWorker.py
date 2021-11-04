@@ -13,24 +13,37 @@ from skimage.metrics import structural_similarity
 
 
 class ImgWorker(threading.Thread):
-    
+
     def __init__(self):
         self.imageArray = []
         self.cleanArray = []
+        self.boundaries = [ #BGR
+       	([90, 110,255 ], [30, 60, 250], ["orange"]),  #Orange
+       	([50, 120, 10], [0, 60, 0], ["grønn"]),  #Grønn
+       	([255, 135, 255], [245, 45, 245], ["rosa"]), #Rosa
+       	([255, 170, 90], [245, 130, 55], ["lyse blå"]), #lyse blå
+        ([170, 50, 80], [120, 35, 60], ["lilla"]), #lilla
+        ([100, 30, 170], [50, 10, 170], ["burgunder"]), #burgunder      
+        ([160, 190, 230], [120, 145, 170], ["hvit"]), #hvit
+        ([60, 60, 95], [0, 0, 0], ["svart"]) #svart
+         ]
         
+    #legger til et bilde i arrayet    
     def addImg(self, img):
         self.imageArray.append(img)
         self.cleanArray.append(img)
         
+    #henter bilde fra bildearray    
     def getImg(self, index=-1):
         return self.imageArray[index]
     
+    #skal trolig slettes
     def removeBackground(self, th = 20):
         
         self.getChange(0,-1, th)
         
                 
-                    
+    #skal trolig slettes                
     def getChange(self, before = 0, after = -1, th = 20):
         img1 = self.imageArray[before].getOrig()
         img2 = self.imageArray[after].getImg()
@@ -43,15 +56,36 @@ class ImgWorker(threading.Thread):
         canvas[imask] = img2[imask]
         self.imageArray[after].image = canvas
         
+    def getColor(self, img, center=(50,50)):
+        x = int(center[0])  #legger senter koordinater i x og y
+        y = int(center[1])
+        c1 = img[x, y]  #Finner farger på 5 steder rundt senter
+        # print(c1)
+        c2 = img[x+5, y]
+        c3 = img[x-5, y]
+        c4 = img[x, y+5]
+        c5 = img[x, y-5]
+        c = [0,0,0]  #Lager et tomt farge array
+        
+        for i in range(3):
+            c[i]=int((int(c1[i])+int(c2[i])+int(c3[i])+int(c4[i])+int(c5[i]))/5)
+            
+        b = self.boundaries #legger boundaries i en egen var for å korte ned teksten
+        color = "null"
+        for i in range(len(self.boundaries)):  #Går igjennom hele listen med farger
+            if (c[0] <= b[i][0][0] and c[0] >= b[i][1][0]): #Sjekker kanal for kanal
+                if (c[1] <= b[i][0][1] and c[1] >= b[i][1][1]):
+                    if (c[2] <= b[i][0][2] and c[2] >= b[i][1][2]):
+                        color = b[i][2]  #Henter fargenavnet
+        #retunerer fargen
+        return color
+
+        
+
         
         
-    def prosess(self, imgIndex):
-        self.imageArray[imgIndex].blur(10,10)
-        self.imageArray[imgIndex].getCnts()
-        self.imageArray[imgIndex].assignPieces()
-        #self.imageArray[imgIndex].showImage()
         
-        return self.imageArray[imgIndex].getImg()
+    
     
     
     ########
@@ -83,18 +117,25 @@ class ImgWorker(threading.Thread):
         filled_after = after.copy()        #Lager en kopi av bildet after
         
         
-        
+        move = []
         for c in contours:   #Går igjennom alle konturene
+        
             area = cv2.contourArea(c)  #Regner arealet
-            if area > 1000:             #Hvis arealet er over 1000, (kan tunes litt)
+            # print(area)
+            if area > 3000:             #Hvis arealet er over 1000, (kan tunes litt)
                 x,y,w,h = cv2.boundingRect(c)  #Finner en rektangel som passer over
 
                 roi = filled_after[y:y + h, x:x + w]   #Kopierer ut kun endringen
                 cv2.rectangle(after, (x, y), (x + w, y + h), (36,255,12), 2)  #Tegner på et rektangel for å visuellt se flyttet
-                
+                shape = self.findShape(roi, 10)
+                print(shape)
                 xc = int(x+w/2)   #Regner ut seneter i flyttet
                 yc = int(y+h/2)
-                cv2.rectangle(after, (xc-2, yc-2), (xc+2, yc+2), (36,255,12), 2)  #tegner en liten rektangel i senter av flyttet
+                
+                #Sjekker for farge
+                color = self.getColor(after, (yc,xc))
+
+                # cv2.rectangle(after, (xc-2, yc-2), (xc+2, yc+2), (36,255,12), 2)  #tegner en liten rektangel i senter av flyttet
                 
                 #For debug
                 # cv2.drawContours(mask, [c], 0, (0,255,0), -1)
@@ -105,61 +146,86 @@ class ImgWorker(threading.Thread):
                 
                 #Tror dette skal bort, men tegner opp sener av flyttet
                 cv2.rectangle(black_bg, (xc-2, yc-2), (xc+2, yc+2), (36,255,12), 2)
-
+                move.append((xc,yc,color[0]))
+                move.append(shape)
+                # print(xc,yc)
+                cv2.imshow('after', roi)
+                cv2.waitKey(0)
+                # self.getColor(black_bg,(xc,yc))
                 
 
                 
         
-        #Retunerer et bilde med flyttet
-        return after
-
-
-
-        
-
+        #Retunerer et bilde med flyttet og 
+        return after, move
     
+        #Dektekterer shape og lager en liste med brikke, possisjon og farge (etterhvert)    
+    def shape_helper(self, c, shapeW = 100):
+        shape = ""
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+        # Square or rectangle
+        if len(approx) == 4:
+            (x, y, w, h) = cv2.boundingRect(approx)
+    
+            # A square will have an aspect ratio that is approximately
+            # equal to one, otherwise, the shape is a rectangle
+            if w > shapeW:
+                shape = "square"
+    
+        # Otherwise assume as circle or oval
+        else:
+            (x, y, w, h) = cv2.boundingRect(approx)
+
+            if w > shapeW:
+               shape = "circle" #if ar >= 0.95 and ar <= 1.05 else "oval"
+    
+        return shape
+    
+    #Finder en shape. Setter wSize for å si noe om hvor vid shapen minst skal være
+    def findShape(self, image, wSize=100):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        # sharpen = cv2.filter2D(gray, -1, sharpen_kernel)
+        thresh = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,51,7)
+        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
-                        
-            
-           
+        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+
+        for c in cnts:
+            shape = self.shape_helper(c, wSize)  #Finner shape
+            if shape != "":
+                return shape #Hvis vi har funnet en, supert
+            else:
+                shape = "No shape found" #Hvis ikke, return no shape
+                return shape
+               
 
 
-
-
-
+# Klasse for hvert bilde
 class Image():
     
-    nr = 0
+    nr = 0  #Antall bilder i klassen
     
     def __init__(self, image, typ = 0, name=""):
         if (typ == 0):
             
             self.image = image
             self.OriginalImage = self.image.copy()
-        else:
+        else:    #Kun ved testing uten kamera
             self.image = cv2.imread(image)
             self.OriginalImage = self.image.copy()
         
         
-        if name == "":
+        if name == "":  #Gir hvert bilde et navn
             self.name = str(Image.nr)
         else:
             self.name = name
-        Image.nr += 1
+        Image.nr += 1  #legg til en i antall bilder
         self.pieces = []
         
         
-    def scale(self, scale_percent = 60):
-         # percent of original size
-        width = int(self.image.shape[1] * scale_percent / 100)
-        height = int(self.image.shape[0] * scale_percent / 100)
-        dim = (width, height)
-
-      
-    # resize image
-        self.image = cv2.resize(self.image, dim, interpolation = cv2.INTER_AREA) 
-    
-    def resetImg(self):
+    def resetImg(self): #Setter bildet tilbake til orginal bilde
         self.image = self.OriginalImage.copy()
     #Return current image
     def getImg(self):
@@ -169,7 +235,7 @@ class Image():
     def getOrig(self):
         return self.OriginalImage
     
-    
+    #Viser bildene
     def showImage(self):
         cv2.imshow(self.name, self.image)
         cv2.waitKey()
@@ -180,69 +246,10 @@ class Image():
         
     def showOriginal(self):
         cv2.imshow(self.name, self.OriginalImage)
-        cv2.waitKey()
-        
-    def blur(self, image, x = 5, y = 5):
-        return cv2.blur(image, (x, y))
-        
-        
-        
-    #Dektekterer shape og lager en liste med brikke, possisjon og farge (etterhvert)    
-    def shape_helper(self, c, shapeW = 100):
-        shape = ""
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.06 * peri, True)
-        # Square or rectangle
-        if len(approx) == 4:
-            (x, y, w, h) = cv2.boundingRect(approx)
-            ar = w / float(h)
-    
-            # A square will have an aspect ratio that is approximately
-            # equal to one, otherwise, the shape is a rectangle
-            if w > shapeW:
-                shape = "square"
-    
-        # Otherwise assume as circle or oval
-        else:
-            (x, y, w, h) = cv2.boundingRect(approx)
-            ar = w / float(h)
-            if w > shapeW:
-               shape = "circle" #if ar >= 0.95 and ar <= 1.05 else "oval"
-    
-        return shape
-    
-    #Finder en shape. Setter wSize for å si noe om hvor vid shapen minst skal være
-    def findShape(self, wSize=100):
-        self.image2 = self.image.copy()
-        gray = cv2.cvtColor(self.image2, cv2.COLOR_BGR2GRAY)
-        # sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-        # sharpen = cv2.filter2D(gray, -1, sharpen_kernel)
-        thresh = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,51,7)
-        thresh = self.blur(thresh, 100,100)
-        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-        
-        pieces = []
-        center = []
-
-        for c in cnts:
-            shape = self.shape_helper(c, wSize)
-            if shape != "":
-                x,y,w,h = cv2.boundingRect(c)
-                xc=int((x+w/2)) #WTF er -5????
-                yc=int(y+h/2)
-                center.append((xc,yc))
-                pieces.append(Piece(xc,yc,shape))
-                cv2.putText(self.image2, ".", (xc, yc), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                cv2.putText(self.image2, shape, (x,y), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                cv2.drawContours(image=self.image2, contours=c, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
-        return center
-        
-    
+        cv2.waitKey()      
 
         
-    
+#Klasse som sikkert slettes hvis vi ikke velger å rydde brettet    
 class Piece:
     def __init__(self, x,y,shape,color = None):
         self.x = x
@@ -267,63 +274,5 @@ class Piece:
 if __name__ == "__main__":  
     imgWork = ImgWorker()    
 
-    def findMove():
 
-        imgWork.getChange(-2,-1,20)
-        imgWork.getImg(-1).showImage()
-        fra = imgWork.getImg(-1).findShape() 
-        
-        #Trekk fra bakgrunn
-        imgWork.getChange(0,-1,20)
-    
-        til = imgWork.getImg(-1).findShape()
-        fra = [item for item in fra if item not in til]
-        
-        return (fra,til)
-
-    def test():
-        i1 = cv2.imread('./img/1.png')
-        i2 = cv2.imread('./img/2.png')
-        i3 = cv2.imread('./img/3.png')
-        i4 = cv2.imread('./img/4.png')
-        
-        #Create imImgWorker()
-        imgWork.addImg(Image(i1))
-        imgWork.addImg(Image(i2))
-        imgWork.addImg(Image(i3))
-        fra,til= findMove()
-        print("fra :" + str(fra))
-        print("til :" + str(til))
-        # imgWork.getImg(-1).showImage()
-        
-        imgWork.addImg(Image(i4))
-        print("next")
-        fra,til= findMove()
-        print("fra :" + str(fra))
-        print("til :" + str(til))
-        imgWork.getImg(-1).showImage()
-    
-    def camTest():
-        import camera
-        #Connect to camera
-        cam = camera.camera()
-        cam.cameraOn()
-        
-        
-        #Create image worker
-        imgWork = ImgWorker()
-        
-        im = cam.takeImage()    #take image
-        
-        imgWork.addImg(Image(im))  #add image to the worker
-        imgWork.getImg(-1).findShape(30)
-        imgWork.getImg(-1).showImage2()
-        input("Wait")
-        im = cam.takeImage()    #take image  
-        imgWork.addImg(Image(im))  #add image to the worker
-        imgWork.removeBackground(70)
-        imgWork.getImg(-1).findShape(30)
-        imgWork.getImg(-1).showImage2()
-        cam.cameraOff()
-    camTest()
         
