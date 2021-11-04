@@ -8,6 +8,7 @@ Created on Mon Oct 25 13:17:47 2021
 import threading
 import cv2
 import numpy as np
+from skimage.metrics import structural_similarity
 
 
 
@@ -52,38 +53,71 @@ class ImgWorker(threading.Thread):
         
         return self.imageArray[imgIndex].getImg()
     
+    
+    ########
+    # Metoden vi trolig ender opp med å bruke
+    ##########
     def getFromTo(self, pFrom = -2, pTo = -1):
-        # picFrom = self.imageArray[pFrom].image
-        # picTo = self.imageArray[pTo].image
+        before = self.imageArray[pFrom].getOrig()  #Henter blidet før flyttet
+        after = self.imageArray[pTo].getImg()      #Henter bildet etter flytt
+        after = np.ascontiguousarray(after, dtype=np.uint8)       #skalerer bildet om til en np.unit8 (for at det skal 
+        #fungere greit seinere)
+        black_bg = 0*np.ones_like(after)  #Lager en versjon hvor vi kan farge alt unntatt flyttet svart
         
-        #Finds change between two pics
-        self.getChange(pFrom,pTo,20)
+        before_gray = cv2.cvtColor(before, cv2.COLOR_BGR2GRAY)  #Konverterer til grått
+        after_gray = cv2.cvtColor(after, cv2.COLOR_BGR2GRAY)    #Konverterer til grått
+        
+        #Her må vi tune litt
+        (score, diff) = structural_similarity(before_gray, after_gray, full=True)  #Finner forskjellen
+        
+        diff = (diff * 255).astype("uint8")   #Gjør noe jeg ikke helt skjønner med diff
+        
+        # Threshold the difference image, followed by finding contours to
+        # obtain the regions of the two input images that differ
+        thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]  #Finner en god threshold
+        contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  #Finner konturer
+        contours = contours[0] if len(contours) == 2 else contours[1]      #Teller konturer
+        
+        # mask = np.zeros(before.shape, dtype='uint8')   #Lager en maske som legger seg over forskjellen i bildene
+              
+        filled_after = after.copy()        #Lager en kopi av bildet after
         
         
-        #Get coordinate change
-        coord_from = self.imageArray[pTo].assignPieces()
-        #Remove background
-        self.removeBackground(20)
-        #Get remaining coordinate
         
-        coord_to = self.imageArray[pTo].image.assignPieces()
-        #Remove the coordinate in from list that is in the to list
-        coord_from = [item for item in coord_from if item not in coord_to]
-        #Repacage the coordinates
-        x = [coord_from, coord_to]
-        #Tup  FROM    TO
-        tup=x[0][0],x[1][0]
-        return tup
+        for c in contours:   #Går igjennom alle konturene
+            area = cv2.contourArea(c)  #Regner arealet
+            if area > 1000:             #Hvis arealet er over 1000, (kan tunes litt)
+                x,y,w,h = cv2.boundingRect(c)  #Finner en rektangel som passer over
+
+                roi = filled_after[y:y + h, x:x + w]   #Kopierer ut kun endringen
+                cv2.rectangle(after, (x, y), (x + w, y + h), (36,255,12), 2)  #Tegner på et rektangel for å visuellt se flyttet
+                
+                xc = int(x+w/2)   #Regner ut seneter i flyttet
+                yc = int(y+h/2)
+                cv2.rectangle(after, (xc-2, yc-2), (xc+2, yc+2), (36,255,12), 2)  #tegner en liten rektangel i senter av flyttet
+                
+                #For debug
+                # cv2.drawContours(mask, [c], 0, (0,255,0), -1)
+                # cv2.drawContours(filled_after, [c], 0, (0,255,0), -1)
+                
+                #Lager et bilde hvor alt utenom flyttet er svart
+                black_bg[y:y+h, x:x+w] = roi
+                
+                #Tror dette skal bort, men tegner opp sener av flyttet
+                cv2.rectangle(black_bg, (xc-2, yc-2), (xc+2, yc+2), (36,255,12), 2)
+
+                
+
+                
         
-#             image1,til = shaping(image1)    
-        # first,p2 = shaping(first)
-        # #cv2.imshow('thresh', thresh)
-        # cv2.imshow('image', image1)
+        #Retunerer et bilde med flyttet
+        return after
+
+
+
         
-        # cv2.imshow('image', first)
-        
-        # print(p2)
-        
+
+    
         
                         
             
@@ -148,8 +182,8 @@ class Image():
         cv2.imshow(self.name, self.OriginalImage)
         cv2.waitKey()
         
-    def blur(self, x = 5, y = 5):
-        self.image = cv2.blur(self.image, (x, y))
+    def blur(self, image, x = 5, y = 5):
+        return cv2.blur(image, (x, y))
         
         
         
@@ -157,7 +191,7 @@ class Image():
     def shape_helper(self, c, shapeW = 100):
         shape = ""
         peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.05 * peri, True)
+        approx = cv2.approxPolyDP(c, 0.06 * peri, True)
         # Square or rectangle
         if len(approx) == 4:
             (x, y, w, h) = cv2.boundingRect(approx)
@@ -181,10 +215,10 @@ class Image():
     def findShape(self, wSize=100):
         self.image2 = self.image.copy()
         gray = cv2.cvtColor(self.image2, cv2.COLOR_BGR2GRAY)
-        sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-        sharpen = cv2.filter2D(gray, -1, sharpen_kernel)
-        thresh = cv2.adaptiveThreshold(sharpen,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,51,7)
-        
+        # sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        # sharpen = cv2.filter2D(gray, -1, sharpen_kernel)
+        thresh = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,51,7)
+        thresh = self.blur(thresh, 100,100)
         cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         cnts = cnts[0] if len(cnts) == 2 else cnts[1]
@@ -202,9 +236,10 @@ class Image():
                 pieces.append(Piece(xc,yc,shape))
                 cv2.putText(self.image2, ".", (xc, yc), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                 cv2.putText(self.image2, shape, (x,y), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                cv2.drawContours(image=self.image2, contours=c, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
         return center
         
-
+    
 
         
     
@@ -226,7 +261,6 @@ class Piece:
     
     def __str__(self):
         return f'X:{self.x} Y:{self.y} White: {self.white}'
-    
 
 
 
@@ -282,12 +316,12 @@ if __name__ == "__main__":
         im = cam.takeImage()    #take image
         
         imgWork.addImg(Image(im))  #add image to the worker
-        imgWork.getImg(-1).findShape(50)
+        imgWork.getImg(-1).findShape(30)
         imgWork.getImg(-1).showImage2()
         input("Wait")
         im = cam.takeImage()    #take image  
         imgWork.addImg(Image(im))  #add image to the worker
-        imgWork.removeBackground(35)
+        imgWork.removeBackground(70)
         imgWork.getImg(-1).findShape(30)
         imgWork.getImg(-1).showImage2()
         cam.cameraOff()

@@ -101,8 +101,9 @@ def findMove3(th):
 
     # imgWork.getImg(-1).showImage2()
     imgWork.removeBackground(th)
-    size = 60
+    size = 10
     til = []
+    imgWork.getImg(-1).blur(10,10)
     while(len(til)!=1):
         til = imgWork.getImg(-1).findShape(size)
         size += 5
@@ -115,6 +116,7 @@ def findMove3(th):
     imgWork.getChange(0,-2,th)
     fra = []
     size = 40
+    imgWork.getImg(-2).blur(10,10)
     while(len(fra)!=1):
 
         fra = imgWork.getImg(-2).findShape(size)
@@ -128,22 +130,28 @@ def findMove3(th):
     imgWork.getImg(-1).resetImg()
     return (fra,til)
 
+def findMove4():
+    x = imgWork.getFromTo(-2,-1)
+    cv2.imshow('after', x)
+    cv2.waitKey(0)
 
 x=input("Waiting for user!: Press anykey")
 im = cam.takeImage()   #take image
 imgWork.addImg(iW.Image(im))
-
+i = 0
 x=""
 while x != "q":
 
     x=input("Waiting for user!: Press anykey")
     im = cam.takeImage()   #take image
+    
 
     imgWork.addImg(iW.Image(im))
 
-    fra,til = findMove3(1)
-    print("fra :" + str(fra))
-    print("til :" + str(til))
+
+    findMove4()
+    # print("fra :" + str(fra))
+    # print("til :" + str(til))
     # imgWork.getImg(-1).showImage()
 
 
