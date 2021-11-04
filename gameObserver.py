@@ -21,6 +21,14 @@ class game(threading.Thread):
         #Connect to camera
         self.cam = camera.camera()
         self.mov = ""
+        
+        #UNCOMMENT WHEN CONNECTED TO CAM
+        # self.cam.cameraOn()  #Skrur på kameraet
+        # #Create image worker
+        # self.imgWork = iW.ImgWorker() 
+        # im = self.cam.takeImage()    #take image
+        
+        # self.imgWork.addImg(iW.Image(im))  #add image to the worker
 
 
 
@@ -29,17 +37,19 @@ class game(threading.Thread):
 
     def run(self):
         print("Started and waiting for instructions")
-        # self.cam.cameraOn()  #Skrur på kameraet
         
         
-        # #Create image worker
-        # self.imgWork = iW.ImgWorker()  
+        
+        #UNCOMMENT WHEN CONNECTED TO CAM
 
         # im = self.cam.takeImage()    #take image
         
         # self.imgWork.addImg(iW.Image(im))  #add image to the worker
         
+        #COMMENT WHEN CONNECTED TO CAM
         self.debugMove()
+        
+        
         while True:
             pass
         
