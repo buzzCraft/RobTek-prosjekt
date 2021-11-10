@@ -18,16 +18,16 @@ class ImgWorker(threading.Thread):
         self.imageArray = []
         self.cleanArray = []
         self.boundaries = [ #BGR
-       	([90, 110,255 ], [30, 60, 250], ["orange"]),  #Orange
-       	([50, 120, 10], [0, 60, 0], ["grønn"]),  #Grønn
-       	([255, 135, 255], [245, 45, 245], ["rosa"]), #Rosa
-       	([255, 170, 90], [245, 130, 55], ["lyse blå"]), #lyse blå
-        ([170, 50, 80], [120, 35, 60], ["lilla"]), #lilla
-        ([100, 30, 170], [50, 10, 170], ["burgunder"]), #burgunder      
-        ([160, 190, 230], [120, 145, 170], ["hvit"]), #hvit
-        ([60, 60, 95], [0, 0, 0], ["svart"]) #svart
+       	([80, 70, 248], [10, 10, 170], ["orange"]),  #Orange
+       	([45, 105, 90], [15, 70, 50], ["grønn"]),  #Grønn
+       	([40, 110,160], [5, 65 ,100], ["gul"]), #Gul
+       	([120,70,45], [50,35,15], ["blå"]), #lyse blå
+        ([80,18,165], [48,5,118], ["rosa"]), #rosa
+        ([15,10,120], [0,1,80], ["rød"]), #rød     
+        ([130,125,155], [60,70,85], ["hvit"]), #hvit
+        ([49,50,70], [0, 0, 0], ["svart"]) #svart
          ]
-        
+
     #legger til et bilde i arrayet    
     def addImg(self, img):
         self.imageArray.append(img)
@@ -38,15 +38,17 @@ class ImgWorker(threading.Thread):
         return self.imageArray[index]
     
     #skal trolig slettes
-    def removeBackground(self, th = 20):
+    def removeBackground(self, img = -1, th = 20):
         
-        self.getChange(0,-1, th)
+        
+        return self.getChange(0,img, th)
         
                 
     #skal trolig slettes                
     def getChange(self, before = 0, after = -1, th = 20):
         img1 = self.imageArray[before].getOrig()
         img2 = self.imageArray[after].getImg()
+        
         diff = cv2.absdiff(img1, img2)
         mask = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 
@@ -54,7 +56,7 @@ class ImgWorker(threading.Thread):
         
         canvas = np.zeros_like(img2, np.uint8)
         canvas[imask] = img2[imask]
-        self.imageArray[after].image = canvas
+        return canvas
         
     def getColor(self, img, center=(50,50)):
         x = int(center[0])  #legger senter koordinater i x og y
@@ -78,6 +80,7 @@ class ImgWorker(threading.Thread):
                     if (c[2] <= b[i][0][2] and c[2] >= b[i][1][2]):
                         color = b[i][2]  #Henter fargenavnet
         #retunerer fargen
+        print(color)
         return color
 
         
@@ -92,6 +95,8 @@ class ImgWorker(threading.Thread):
     # Metoden vi trolig ender opp med å bruke
     ##########
     def getFromTo(self, pFrom = -2, pTo = -1):
+        # before = self.removeBackground(pFrom)
+        # after = self.removeBackground(pTo)
         before = self.imageArray[pFrom].getOrig()  #Henter blidet før flyttet
         after = self.imageArray[pTo].getImg()      #Henter bildet etter flytt
         after = np.ascontiguousarray(after, dtype=np.uint8)       #skalerer bildet om til en np.unit8 (for at det skal 
@@ -100,29 +105,33 @@ class ImgWorker(threading.Thread):
         
         before_gray = cv2.cvtColor(before, cv2.COLOR_BGR2GRAY)  #Konverterer til grått
         after_gray = cv2.cvtColor(after, cv2.COLOR_BGR2GRAY)    #Konverterer til grått
-        
+
         #Her må vi tune litt
         (score, diff) = structural_similarity(before_gray, after_gray, full=True)  #Finner forskjellen
-        
+        cv2.imshow('after', diff)
         diff = (diff * 255).astype("uint8")   #Gjør noe jeg ikke helt skjønner med diff
-        
+        cv2.imshow('after', diff)
+        cv2.waitKey(0)
         # Threshold the difference image, followed by finding contours to
         # obtain the regions of the two input images that differ
+        # thresh = cv2.threshold(diff,127,255,cv2.THRESH_BINARY_INV)[1]
         thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]  #Finner en god threshold
+        cv2.imshow('after', thresh)
+        cv2.waitKey(0)
         contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  #Finner konturer
         contours = contours[0] if len(contours) == 2 else contours[1]      #Teller konturer
         
         # mask = np.zeros(before.shape, dtype='uint8')   #Lager en maske som legger seg over forskjellen i bildene
               
         filled_after = after.copy()        #Lager en kopi av bildet after
-        
+        cv2.drawContours(after, contours, -1, (0,255,0), 3)
         
         move = []
         for c in contours:   #Går igjennom alle konturene
         
             area = cv2.contourArea(c)  #Regner arealet
             # print(area)
-            if area > 3000:             #Hvis arealet er over 1000, (kan tunes litt)
+            if area > 500:             #Hvis arealet er over 1000, (kan tunes litt)
                 x,y,w,h = cv2.boundingRect(c)  #Finner en rektangel som passer over
 
                 roi = filled_after[y:y + h, x:x + w]   #Kopierer ut kun endringen

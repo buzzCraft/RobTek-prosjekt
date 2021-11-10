@@ -36,6 +36,8 @@ from pyueye_example_utils import (uEyeException, Rect, get_bits_per_pixel,
 import ctypes
 
 class Camera:
+    
+    
     def __init__(self, device_id=0):
         self.h_cam = ueye.HIDS(device_id)
         self.img_buffers = []
@@ -102,22 +104,7 @@ class Camera:
 
         return ueye.is_AOI(self.h_cam, ueye.IS_AOI_IMAGE_SET_AOI, rect_aoi, ueye.sizeof(rect_aoi))
     
-    def setGain(self, g1,g2,g3,g4):
-        pval1 = ctypes.c_int(g1)
-        pval2 = ctypes.c_int(g2) # not used for output on IS_GET_ENABLE_AUTO_GAIN 
-        pval3 = ctypes.c_int(g3)
-        pval4 = ctypes.c_int(g4)
-        
-        nRet = ueye._is_SetHardwareGain(self.h_cam, pval1, pval2,pval3,pval4)
-        
-    def reset(self):
-        nRet = ueye._is_ResetToDefault(self.h_cam)
-        
-    def setWhite(self, g1,g2,g3):
-        r = ctypes.c_double(g1)
-        g = ctypes.c_double(g2) # not used for output on IS_GET_ENABLE_AUTO_GAIN 
-        b = ctypes.c_double(g3)
-        ueye._is_SetWhiteBalanceMultipliers(self.h_cam, r, g, b)
+
     
     def getCam(self):
         return self.h_cam
@@ -149,3 +136,66 @@ class Camera:
         check(ueye.is_ImageFormat(self.h_cam, ueye.IMGFRMT_CMD_GET_LIST,
                                   format_list, ueye.sizeof(format_list)))
         return format_list
+
+
+#Metoder hentet fra git som forhåpentligvis fikser noe..
+    def set_gain_auto(self, toggle):
+        """
+        Set/unset auto gain.
+        Params
+        ======
+        toggle: integer
+            1 activate the auto gain, 0 deactivate it
+        """
+        value = ueye.c_double(toggle)
+        value_to_return = ueye.c_double()
+        check(ueye.is_SetAutoParameter(self.h_cam,
+                                       ueye.IS_SET_ENABLE_AUTO_GAIN,
+                                       value,
+                                       value_to_return))
+    def set_exposure_auto(self, toggle):
+        """
+        Set auto expose to on/off.
+        Params
+        =======
+        toggle: integer
+            1 activate the auto gain, 0 deactivate it
+        """
+        value = ueye.c_double(toggle)
+        value_to_return = ueye.c_double()
+        check(ueye.is_SetAutoParameter(self.h_cam,
+                                       ueye.IS_SET_ENABLE_AUTO_SHUTTER,
+                                       value,
+                                       value_to_return))
+    def set_exposure(self, exposure):
+        """
+        Set the exposure.
+        Returns
+        =======
+        exposure: number
+            Real exposure, can be slightly different than the asked one.
+        """
+        new_exposure = ueye.c_double(exposure)
+        check(ueye.is_Exposure(self.h_cam,
+                               ueye.IS_EXPOSURE_CMD_SET_EXPOSURE,
+                               new_exposure, 8))
+        
+    
+        
+# Egne greier
+    def setGain(self, g1,g2,g3,g4):
+        pval1 = ctypes.c_int(g1)
+        pval2 = ctypes.c_int(g2) # not used for output on IS_GET_ENABLE_AUTO_GAIN 
+        pval3 = ctypes.c_int(g3)
+        pval4 = ctypes.c_int(g4)
+        
+        nRet = ueye._is_SetHardwareGain(self.h_cam, pval1, pval2,pval3,pval4)
+        
+    def reset(self):
+        nRet = ueye._is_ResetToDefault(self.h_cam)
+        
+    def setWhite(self, g1,g2,g3):
+        r = ctypes.c_double(g1)
+        g = ctypes.c_double(g2) # not used for output on IS_GET_ENABLE_AUTO_GAIN 
+        b = ctypes.c_double(g3)
+        ueye._is_SetWhiteBalanceMultipliers(self.h_cam, r, g, b)

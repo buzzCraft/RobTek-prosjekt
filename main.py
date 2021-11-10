@@ -54,17 +54,20 @@ imgWork.addImg(iW.Image(im))
 i = 0
 x=""
 while x != "q":
-
+    cam.cameraOn()
     x=input("Waiting for user!: Press anykey")
     im = cam.takeImage()   #take image
     
 
     imgWork.addImg(iW.Image(im))
+    cam.cameraOff()
+    
 
 
     move = findMove4()
     mov = fromTo(move)
     print("from: " + str(mov[0]) + ", to: " +str(mov[1]))
+    print(mov)
 
     # print("fra :" + str(fra))
     # print("til :" + str(til))

@@ -47,10 +47,13 @@ class camera:
             self.cam.init()  # gives error when camera not connected
             self.cam.reset()
             self.cam.set_colormode(ueye.IS_CM_RGB8_PACKED)
-            self.cam.setGain(0,0,0,50)
-            self.cam.setWhite(26, 5, 10)
+            # self.cam.set_exposure_auto(0)
+            self.cam.set_exposure(20)   #20
+            #self.cam.set_gain_auto(0)
+            self.cam.setGain(0,0,0,70)  #0,0,0,70
+            # self.cam.setWhite(26, 5, 10)
             # This function is currently not supported by the camera models USB 3 uEye XC and XS.
-           # self.cam.set_aoi(0, 0, 720, 1280)  # but this is the size used
+            self.cam.set_aoi(528,118,852,850)  # AOI kan justeres
             self.cam.alloc(3)  # argument is number of buffers
             self.cam_on = True
 
@@ -69,7 +72,7 @@ class camera:
             if retVal == ueye.IS_SUCCESS:
                 print('  ueye.IS_SUCCESS: image buffer id = %i' % imBuf.mem_id)
                 self.imageArray.append(self.copy_image( ImageData(self.cam.handle(), imBuf) ))  # copy image_data 
-
+                self.showImage()
         return self.imageArray[-1]
     
     
@@ -94,6 +97,7 @@ class camera:
     
     def showImage(self):
         cv2.imshow('thresssssh', self.imageArray[-1])
+        cv2.waitKey(0)
     
     def copy_image(self, image_data):
         """Copy an image from camera memory to numpy image array 'self.npImage'."""

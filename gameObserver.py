@@ -12,47 +12,26 @@ import cv2
 import threading
 import time #for debugging
 
-class game(threading.Thread):
+class game():
     
     
     #Init
     def __init__(self):
-        threading.Thread.__init__(self)
+        # threading.Thread.__init__(self)
         #Connect to camera
         self.cam = camera.camera()
         self.mov = ""
+        self.farger = ("orange", "grønn", "gul", "blå", "rosa", "rød")
+        self.bakgrunn = ("hvit", "svart")
         
         #UNCOMMENT WHEN CONNECTED TO CAM
-        # self.cam.cameraOn()  #Skrur på kameraet
-        # #Create image worker
-        # self.imgWork = iW.ImgWorker() 
-        # im = self.cam.takeImage()    #take image
+        self.cam.cameraOn()  #Skrur på kameraet
+        #Create image worker
+        self.imgWork = iW.ImgWorker() 
+        im = self.cam.takeImage()    #take image
         
-        # self.imgWork.addImg(iW.Image(im))  #add image to the worker
+        self.imgWork.addImg(iW.Image(im))  #add image to the worker
 
-
-
-
-
-
-    def run(self):
-        print("Started and waiting for instructions")
-        
-        
-        
-        #UNCOMMENT WHEN CONNECTED TO CAM
-
-        # im = self.cam.takeImage()    #take image
-        
-        # self.imgWork.addImg(iW.Image(im))  #add image to the worker
-        
-        #COMMENT WHEN CONNECTED TO CAM
-        self.debugMove()
-        
-        
-        while True:
-            pass
-        
 
         
     
@@ -66,22 +45,23 @@ class game(threading.Thread):
     def fromTo(self, move):
         #Forsøker å finne ut hvilken rettning det flyttes
         #Forløpig har vi mest suksess med å se om senter er hvitt / svart
-        if (move[0][2] == 'hvit' or move[0][2] == 'svart'): #hvis før ste x,y par har hvit/svart bakgrunn
+        if (move[0][2] in self.bakgrunn): #hvis før ste x,y par har hvit/svart bakgrunn
             fro = move[0][0],move[0][1]     #så er det fra
             to = move[2][0],move[2][1]
-        elif (move[2][2] == 'hvit' or move[2][2] == 'svart'):  #hvis ikke, omvendt
+        elif (move[2][2] in self.bakgrunn):  #hvis ikke, omvendt
             fro = move[2][0],move[2][1]
             to = move[0][0],move[0][1]
-        else: #det har under testing hendt at man ikke finner svart/hvit bakgrunn. 
-        #farger for de andre brikkene er ikke lagt inn under riktige lysforholdene enda, men
-        #man kan selvfølgelig benytte de
-            fro ="error"
-            to = "error"
+        elif(move[0][2] in self.farger): #hvis før ste x,y par har hvit/svart bakgrunn
+            to = move[0][0],move[0][1]     #så er det fra
+            fro = move[2][0],move[2][1]
+        elif (move[2][2] in self.farger):  #hvis ikke, omvendt
+            to = move[2][0],move[2][1]
+            fro = move[0][0],move[0][1]
         
             
         return fro,to
     
-    def newPics(self): #Ta bilde og beregn bevegelse
+    def newPicture(self): #Ta bilde og beregn bevegelse
         
         im = self.cam.takeImage()   #take image
         self.imgWork.addImg(iW.Image(im)) #legg bildet til i imageworker
@@ -106,10 +86,15 @@ class game(threading.Thread):
         return string
         
     def main_task(self):
-       m = self.newPics()
-       string = self.sendString(m)
-       
-       return string
+        input("enter for debug")
+        m = self.newPicture()
+        string = self.sendString(m)
+       #string = ("b3333;100,200,200,300") #string format
+       # string = (6,0,5,0) #FOR DEBUG 
+        print(string)
+        return string
+   
+    
 ####Debugging##################   
     def debugMove(self):
         y  = self.delay()
