@@ -2,11 +2,10 @@
 """
 Created on Tue Oct 26 12:51:14 2021
 
-@author: theoo
+@author: buzzCraft
 """
 
 import camera
-import crop
 import imageWorker as iW
 import cv2
 

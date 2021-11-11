@@ -2,17 +2,17 @@
 """
 Created on Mon Oct 25 13:17:47 2021
 
-@author: theoo
+@author: buzzCraft
 """
 
-import threading
+# import threading
 import cv2
 import numpy as np
 from skimage.metrics import structural_similarity
 
 
 
-class ImgWorker(threading.Thread):
+class ImgWorker():
 
     def __init__(self):
         self.imageArray = []

@@ -1,32 +1,25 @@
-_appFileName = "appImageViewer2"
-_author = "Karl Skretting, UiS" 
-_version = "2020.11.11"
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct 26 12:51:14 2021
 
-import sys
-import os.path
+@author: buzzCraft
+"""
+
+
 import numpy as np
 import cv2
-import ctypes
 
-# try:
-#     from PyQt5.QtCore import Qt, QPoint, QRectF, QT_VERSION_STR
-#     from PyQt5.QtGui import QImage, QPixmap, QTransform
-#     from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QFileDialog, QLabel, 
-#             QGraphicsScene, QGraphicsPixmapItem)
-# except ImportError:
-#     raise ImportError("%s: Requires PyQt5." % _appFileName)
-# #end try, import PyQt5 classes
 
 
 from pyueye import ueye
-from pyueye_example_camera import Camera
-from pyueye_example_utils import ImageData, ImageBuffer  # FrameThread, 
+from pyueye_camera import Camera
+from pyueye_utils import ImageData, ImageBuffer  # FrameThread, 
 
 
 #end try, import pyueye
 
 #from appImageViewer1 import myPath, MainWindow as inheritedMainWindow 
-from myImageTools import np2qimage
+# from myImageTools import np2qimage
 
 
 class camera:
