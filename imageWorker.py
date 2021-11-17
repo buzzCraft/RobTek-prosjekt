@@ -61,17 +61,27 @@ class ImgWorker():
     def getColor(self, img, center=(50,50)):
         x = int(center[0])  #legger senter koordinater i x og y
         y = int(center[1])
-        c1 = img[x, y]  #Finner farger på 5 steder rundt senter
-        # print(c1)
-        c2 = img[x+5, y]
-        c3 = img[x-5, y]
-        c4 = img[x, y+5]
-        c5 = img[x, y-5]
+        # c1 = img[x, y]  #Finner farger på 5 steder rundt senter
+        # # print(c1)
+        # c2 = img[x+5, y]
+        # c3 = img[x-5, y]
+        # c4 = img[x, y+5]
+        # c5 = img[x, y-5]
         c = [0,0,0]  #Lager et tomt farge array
         
+        # for i in range(3):
+        #     c[i]=int((int(c1[i])+int(c2[i])+int(c3[i])+int(c4[i])+int(c5[i]))/5)
+        colArr = []
+        for i in range(10):
+            colArr.append(img[(x-5)+i,y])
+            colArr.append(img[x,(y-5)+i])
         for i in range(3):
-            c[i]=int((int(c1[i])+int(c2[i])+int(c3[i])+int(c4[i])+int(c5[i]))/5)
+            for j in range(20):
+                c[i] = c[i] + int(colArr[j][i])
+            c[i] = c[i] / 20
             
+        
+        
         b = self.boundaries #legger boundaries i en egen var for å korte ned teksten
         color = "null"
         for i in range(len(self.boundaries)):  #Går igjennom hele listen med farger
@@ -108,16 +118,16 @@ class ImgWorker():
 
         #Her må vi tune litt
         (score, diff) = structural_similarity(before_gray, after_gray, full=True)  #Finner forskjellen
-        cv2.imshow('after', diff)
+        # cv2.imshow('after', diff)
         diff = (diff * 255).astype("uint8")   #Gjør noe jeg ikke helt skjønner med diff
-        cv2.imshow('after', diff)
-        cv2.waitKey(0)
+        # cv2.imshow('after', diff)
+        # cv2.waitKey(0)
         # Threshold the difference image, followed by finding contours to
         # obtain the regions of the two input images that differ
         # thresh = cv2.threshold(diff,127,255,cv2.THRESH_BINARY_INV)[1]
         thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]  #Finner en god threshold
-        cv2.imshow('after', thresh)
-        cv2.waitKey(0)
+        # cv2.imshow('after', thresh)
+        # cv2.waitKey(0)
         contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  #Finner konturer
         contours = contours[0] if len(contours) == 2 else contours[1]      #Teller konturer
         
@@ -158,8 +168,8 @@ class ImgWorker():
                 move.append((xc,yc,color[0]))
                 move.append(shape)
                 # print(xc,yc)
-                cv2.imshow('after', roi)
-                cv2.waitKey(0)
+                # cv2.imshow('after', roi)
+                # cv2.waitKey(0)
                 # self.getColor(black_bg,(xc,yc))
                 
 
@@ -179,7 +189,7 @@ class ImgWorker():
     
             # A square will have an aspect ratio that is approximately
             # equal to one, otherwise, the shape is a rectangle
-            if w > shapeW:
+            if shapeW < w:
                 shape = "square"
     
         # Otherwise assume as circle or oval
@@ -258,25 +268,7 @@ class Image():
         cv2.waitKey()      
 
         
-#Klasse som sikkert slettes hvis vi ikke velger å rydde brettet    
-class Piece:
-    def __init__(self, x,y,shape,color = None):
-        self.x = x
-        self.y = y
-        if shape == "circle":
-            self.white = True
-        else:
-            self.white = False
-    
-    def setPos(self, x,y):
-        self.x = x
-        self.y = y
-    
-    def getPos(self):
-        return (self.x,self.y)
-    
-    def __str__(self):
-        return f'X:{self.x} Y:{self.y} White: {self.white}'
+
 
 
 

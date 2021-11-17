@@ -38,13 +38,14 @@ class game():
     def findMove(self):
     
         x,move = self.imgWork.getFromTo(-2,-1)
-        cv2.imshow('after', x)  #For å vise hvor man beveget fra og til
-        cv2.waitKey(0)
+        
         return move      #retunerer move som ([x,y,farge,shape],[x,y,farge,shape])
 
     def fromTo(self, move):
         #Forsøker å finne ut hvilken rettning det flyttes
         #Forløpig har vi mest suksess med å se om senter er hvitt / svart
+        fro = [0,0]
+        to = [0,0]
         if (move[0][2] in self.bakgrunn): #hvis før ste x,y par har hvit/svart bakgrunn
             fro = move[0][0],move[0][1]     #så er det fra
             to = move[2][0],move[2][1]
@@ -67,12 +68,60 @@ class game():
         self.imgWork.addImg(iW.Image(im)) #legg bildet til i imageworker
 
         move = self.findMove()  #finn bevegelsen
-        mov = self.fromTo(move) #beregn fra og til
+        if len(move==2): #Vanlig flytt
+            mov = self.fromTo(move) #beregn fra og til
+        elif len(move==3): #enpasant
+            print("Ikke implementert for hvit")
+            mov = [0,0,7,6] #Feil bevegelse
+        elif len(move==4):
+            #Sjekk om det er 2 svarte felter
+            #Velg den med høyest verdi
+            farger = [0,0,0,0] #svart, hvit, blå, grønn
+            trekk =[] # en liste for å ta vare på to trekk
+            for m in move:  #går igjennom alle bevegelser i move
+                if (m[2] == "svart"): #Hvis vi har svart bakgrunn
+                    farger[0] += 1    #Legg en til i svart
+                    if (farger[0] == 1): #Hvis vi allerede har funnet en svart
+                        for mov in trekk: #Sjekk lista med trekk for det svarte trekket
+                            if (mov[2] == "svart"):
+                                #Sjekk om det nye trekket er lengere til venstre
+                                if abs(mov[0])+abs(mov[1]) > abs(m[0])+abs(m[1]): 
+                                    mov[0] = m[0]  #Oppdaterer trekket hvis det nye er større
+                                    mov[1] = m[1]
+
+                                
+                    else:  #Hvis første gang vi ser svart, legg til svart
+                        trekk.append(m)
+            
+                elif (m[2] == "hvit"):
+                    farger[1] += 1
+                
+                elif (m[2]=="blå"):
+                    farger[2] += 1
+                    trekk.append(m) #Legg til det blå trekket
+                
+                elif (m[2] == "grønn"):
+                    farger[3] += 1
+            mov = self.fromTo(trekk) #beregn fra og til
+
+            if sum(farger) != 4:
+                print("Error")
+                mov = [0,0,7,6] #Feil bevegelse
+            
+            #Finn hvor blå står
+            #Sender blå , svart(høyeste)
+        else:
+            print("Error")
+            mov = [0,0,7,6] #Feil bevegelse 
         #Debug streng
         print("from: " + str(mov[0]) + ", to: " +str(mov[1]))
         #retuner movement
         return mov
     
+    def snapPicture(self):
+        im = self.cam.takeImage()   #take image
+        self.imgWork.addImg(iW.Image(im)) #legg bildet til i imageworker
+        
     def sendString(self, mov):
         #Henter først ut alle movments
         x_from = str(mov[0][0])
@@ -86,32 +135,14 @@ class game():
         return string
         
     def main_task(self):
-        input("enter for debug")
+        # input("enter for debug")
         m = self.newPicture()
         string = self.sendString(m)
        #string = ("b3333;100,200,200,300") #string format
        # string = (6,0,5,0) #FOR DEBUG 
-        print(string)
+        # print(string)
         return string
-   
-    
-####Debugging##################   
-    def debugMove(self):
-        y  = self.delay()
-        return y
-    
-    def delay(self):
-        time.sleep(10)
-        self.mov = 6,0
-        time.sleep(1)
-        self.mov = 5,0
-        
-    def getMov(self):
-        return self.mov
-    
-    def setMov(self, mov):
-        self.mov =mov
-############################        
+         
         
         
     def close(self):
