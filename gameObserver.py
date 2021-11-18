@@ -48,15 +48,15 @@ class game():
         to = [0,0]
         if (move[0][2] in self.bakgrunn): #hvis før ste x,y par har hvit/svart bakgrunn
             fro = move[0][0],move[0][1]     #så er det fra
-            to = move[2][0],move[2][1]
-        elif (move[2][2] in self.bakgrunn):  #hvis ikke, omvendt
-            fro = move[2][0],move[2][1]
+            to = move[1][0],move[1][1]
+        elif (move[1][2] in self.bakgrunn):  #hvis ikke, omvendt
+            fro = move[1][0],move[1][1]
             to = move[0][0],move[0][1]
         elif(move[0][2] in self.farger): #hvis før ste x,y par har hvit/svart bakgrunn
             to = move[0][0],move[0][1]     #så er det fra
-            fro = move[2][0],move[2][1]
-        elif (move[2][2] in self.farger):  #hvis ikke, omvendt
-            to = move[2][0],move[2][1]
+            fro = move[1][0],move[1][1]
+        elif (move[1][2] in self.farger):  #hvis ikke, omvendt
+            to = move[1][0],move[1][1]
             fro = move[0][0],move[0][1]
         
             

@@ -27,6 +27,8 @@ class ImgWorker():
         ([130,125,155], [60,70,85], ["hvit"]), #hvit
         ([49,50,70], [0, 0, 0], ["svart"]) #svart
          ]
+        self.farger = ("orange", "grønn", "gul", "blå", "rosa", "rød")
+        self.bakgrunn = ("hvit", "svart")
 
     #legger til et bilde i arrayet    
     def addImg(self, img):
@@ -90,7 +92,7 @@ class ImgWorker():
                     if (c[2] <= b[i][0][2] and c[2] >= b[i][1][2]):
                         color = b[i][2]  #Henter fargenavnet
         #retunerer fargen
-        print(color)
+
         return color
 
         
@@ -146,30 +148,29 @@ class ImgWorker():
 
                 roi = filled_after[y:y + h, x:x + w]   #Kopierer ut kun endringen
                 cv2.rectangle(after, (x, y), (x + w, y + h), (36,255,12), 2)  #Tegner på et rektangel for å visuellt se flyttet
-                shape = self.findShape(roi, 10)
-                print(shape)
+
                 xc = int(x+w/2)   #Regner ut seneter i flyttet
                 yc = int(y+h/2)
                 
                 #Sjekker for farge
                 color = self.getColor(after, (yc,xc))
+                shape = "none"
+                if color[0] in self.farger:
+                    
+                    shape = self.findShape(filled_after, color[0], yc,xc, 25)
+                    # print(shape)
 
-                # cv2.rectangle(after, (xc-2, yc-2), (xc+2, yc+2), (36,255,12), 2)  #tegner en liten rektangel i senter av flyttet
-                
-                #For debug
-                # cv2.drawContours(mask, [c], 0, (0,255,0), -1)
-                # cv2.drawContours(filled_after, [c], 0, (0,255,0), -1)
                 
                 #Lager et bilde hvor alt utenom flyttet er svart
                 black_bg[y:y+h, x:x+w] = roi
                 
                 #Tror dette skal bort, men tegner opp sener av flyttet
                 cv2.rectangle(black_bg, (xc-2, yc-2), (xc+2, yc+2), (36,255,12), 2)
-                move.append((xc,yc,color[0]))
-                move.append(shape)
+                move.append((xc,yc,color[0],shape))
+                # move.append(shape)
                 # print(xc,yc)
-                # cv2.imshow('after', roi)
-                # cv2.waitKey(0)
+                cv2.imshow('after', after)
+                cv2.waitKey(0)
                 # self.getColor(black_bg,(xc,yc))
                 
 
@@ -178,47 +179,53 @@ class ImgWorker():
         #Retunerer et bilde med flyttet og 
         return after, move
     
-        #Dektekterer shape og lager en liste med brikke, possisjon og farge (etterhvert)    
-    def shape_helper(self, c, shapeW = 100):
-        shape = ""
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        # Square or rectangle
-        if len(approx) == 4:
-            (x, y, w, h) = cv2.boundingRect(approx)
-    
-            # A square will have an aspect ratio that is approximately
-            # equal to one, otherwise, the shape is a rectangle
-            if shapeW < w:
-                shape = "square"
-    
-        # Otherwise assume as circle or oval
-        else:
-            (x, y, w, h) = cv2.boundingRect(approx)
 
-            if w > shapeW:
-               shape = "circle" #if ar >= 0.95 and ar <= 1.05 else "oval"
-    
-        return shape
-    
-    #Finder en shape. Setter wSize for å si noe om hvor vid shapen minst skal være
-    def findShape(self, image, wSize=100):
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        # sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-        # sharpen = cv2.filter2D(gray, -1, sharpen_kernel)
-        thresh = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,51,7)
-        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+    def findShape(self, img, color,x,y, pixJump=5):
+        #img  bildet vi sjekker
+        #color fargen til brikken
+        #pixJump, hvor langt man hopper til en side for å se om det er sirkel eller firkant
+        i=0
         
-        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+        pix = img[x+i,y] 
 
-        for c in cnts:
-            shape = self.shape_helper(c, wSize)  #Finner shape
-            if shape != "":
-                return shape #Hvis vi har funnet en, supert
-            else:
-                shape = "No shape found" #Hvis ikke, return no shape
-                return shape
-               
+        # if (l == 0):
+        #     return "none1"
+        # print(l)
+        # print(pix)
+        while self.pixInColor(pix,color):
+            i += 1
+            pix = img[x+i,y]
+
+        #Gå så en tilbake (i -=1 )
+        #Hopp så pixJump i y og -y og se om vi finner fargen
+        #Hvis en av de ja! -> Firkant
+        #Hvis ingen -> Sirkel
+        i -= 1
+
+        p1 = img[x+i,(y+i-10)]
+        p2 = img[x+i,(y-i+10)]
+
+        if self.pixInColor(p1, color):
+            shape = "firkant"
+        elif self.pixInColor(p2, color):
+            shape = "firkant"
+        else:
+            shape = "sirkel"
+        
+        return shape
+        
+    def pixInColor(self, pix, color):
+        for row in self.boundaries:
+            if (row[2][0] == color):
+                l = row[0]
+                r = row[1]
+
+
+        if pix[0]<=l[0] and pix[1]<=l[1] and pix[2]<=l[2] and pix[0]>=r[0] and pix[1]>=r[1] and pix[2]>=r[2]:
+            return True
+        else: return False
+             
 
 
 # Klasse for hvert bilde
