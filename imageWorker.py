@@ -63,12 +63,7 @@ class ImgWorker():
     def getColor(self, img, center=(50,50)):
         x = int(center[0])  #legger senter koordinater i x og y
         y = int(center[1])
-        # c1 = img[x, y]  #Finner farger på 5 steder rundt senter
-        # # print(c1)
-        # c2 = img[x+5, y]
-        # c3 = img[x-5, y]
-        # c4 = img[x, y+5]
-        # c5 = img[x, y-5]
+
         c = [0,0,0]  #Lager et tomt farge array
         
         # for i in range(3):
@@ -92,20 +87,12 @@ class ImgWorker():
                     if (c[2] <= b[i][0][2] and c[2] >= b[i][1][2]):
                         color = b[i][2]  #Henter fargenavnet
         #retunerer fargen
-
+        print(color)
         return color
 
         
-
-        
-        
-        
-    
-    
-    
-    ########
-    # Metoden vi trolig ender opp med å bruke
-    ##########
+    #Finner endringen mellom to bilder
+    #Finner i pikselverdi hvor endringene har skjedd
     def getFromTo(self, pFrom = -2, pTo = -1):
         # before = self.removeBackground(pFrom)
         # after = self.removeBackground(pTo)
@@ -124,9 +111,6 @@ class ImgWorker():
         diff = (diff * 255).astype("uint8")   #Gjør noe jeg ikke helt skjønner med diff
         # cv2.imshow('after', diff)
         # cv2.waitKey(0)
-        # Threshold the difference image, followed by finding contours to
-        # obtain the regions of the two input images that differ
-        # thresh = cv2.threshold(diff,127,255,cv2.THRESH_BINARY_INV)[1]
         thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]  #Finner en god threshold
         # cv2.imshow('after', thresh)
         # cv2.waitKey(0)
@@ -143,7 +127,7 @@ class ImgWorker():
         
             area = cv2.contourArea(c)  #Regner arealet
             # print(area)
-            if area > 500:             #Hvis arealet er over 1000, (kan tunes litt)
+            if area > 1000:             #Hvis arealet er over 1000, (kan tunes litt)
                 x,y,w,h = cv2.boundingRect(c)  #Finner en rektangel som passer over
 
                 roi = filled_after[y:y + h, x:x + w]   #Kopierer ut kun endringen
@@ -189,10 +173,6 @@ class ImgWorker():
         
         pix = img[x+i,y] 
 
-        # if (l == 0):
-        #     return "none1"
-        # print(l)
-        # print(pix)
         while self.pixInColor(pix,color):
             i += 1
             pix = img[x+i,y]
@@ -203,8 +183,8 @@ class ImgWorker():
         #Hvis ingen -> Sirkel
         i -= 1
 
-        p1 = img[x+i,(y+i-10)]
-        p2 = img[x+i,(y-i+10)]
+        p1 = img[x+i,(y+i-5)]
+        p2 = img[x+i,(y-i+5)]
 
         if self.pixInColor(p1, color):
             shape = "firkant"
@@ -212,7 +192,7 @@ class ImgWorker():
             shape = "firkant"
         else:
             shape = "sirkel"
-        
+        print(shape)
         return shape
         
     def pixInColor(self, pix, color):

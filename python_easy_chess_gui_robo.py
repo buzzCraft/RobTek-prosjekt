@@ -1703,7 +1703,8 @@ class EasyChessGui:
         # Init timer
         human_timer = self.define_timer(window)
         engine_timer = self.define_timer(window, 'engine')
-        self.go.snapPicture()
+        if self.robogame:
+            self.go.snapPicture()
 
 
         # Game loop
@@ -2023,13 +2024,10 @@ class EasyChessGui:
                         self.game.headers['FEN'] = self.fen
                         break
                     
-                    ########################################
-                    # Henter bevegelse fra bilde           #
-                    ########################################
-                    #ROBOMOVE
+
                     
                     ######################                  
-                    # HACKYTACK STARTING #
+                    # ROBOGAME STARTING  #
                     ######################
                     
                     if self.robogame:
@@ -2218,7 +2216,7 @@ class EasyChessGui:
                             
                             
             #######################################################
-            #               HACKYTACK  ENDING                     #
+            #               USER DONE - ROBOTURN                  #
             #######################################################
             
 

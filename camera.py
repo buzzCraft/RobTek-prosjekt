@@ -65,7 +65,7 @@ class camera:
             if retVal == ueye.IS_SUCCESS:
                 print('  ueye.IS_SUCCESS: image buffer id = %i' % imBuf.mem_id)
                 self.imageArray.append(self.copy_image( ImageData(self.cam.handle(), imBuf) ))  # copy image_data 
-                self.showImage()
+                # self.showImage()
         return self.imageArray[-1]
     
     

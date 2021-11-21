@@ -62,26 +62,31 @@ class game():
             
         return fro,to
     
-    def newPicture(self): #Ta bilde og beregn bevegelse
+    def newPicture(self, pic): #Ta bilde og beregn bevegelse
         
-        im = self.cam.takeImage()   #take image
-        self.imgWork.addImg(iW.Image(im)) #legg bildet til i imageworker
+
+        self.imgWork.addImg(iW.Image(pic)) #legg bildet til i imageworker
 
         move = self.findMove()  #finn bevegelsen
-        if len(move==2): #Vanlig flytt
+
+        print(f'{move[0][2]} {move[0][3]} flyttet fra {move[1][0]}, {move[1][1]} til {move[0][0]}, {move[0][1]} ')
+        if len(move)==2: #Vanlig flytt
+
             mov = self.fromTo(move) #beregn fra og til
-        elif len(move==3): #enpasant
+        elif len(move)==3: #enpasant
             print("Ikke implementert for hvit")
             mov = [0,0,7,6] #Feil bevegelse
-        elif len(move==4):
+        elif len(move)==4:
             #Sjekk om det er 2 svarte felter
             #Velg den med høyest verdi
             farger = [0,0,0,0] #svart, hvit, blå, grønn
             trekk =[] # en liste for å ta vare på to trekk
             for m in move:  #går igjennom alle bevegelser i move
                 if (m[2] == "svart"): #Hvis vi har svart bakgrunn
+
                     farger[0] += 1    #Legg en til i svart
-                    if (farger[0] == 1): #Hvis vi allerede har funnet en svart
+                    if (farger[0] < 1): #Hvis vi allerede har funnet en svart
+
                         for mov in trekk: #Sjekk lista med trekk for det svarte trekket
                             if (mov[2] == "svart"):
                                 #Sjekk om det nye trekket er lengere til venstre
@@ -92,6 +97,7 @@ class game():
                                 
                     else:  #Hvis første gang vi ser svart, legg til svart
                         trekk.append(m)
+
             
                 elif (m[2] == "hvit"):
                     farger[1] += 1
@@ -114,8 +120,8 @@ class game():
             print("Error")
             mov = [0,0,7,6] #Feil bevegelse 
         #Debug streng
-        print("from: " + str(mov[0]) + ", to: " +str(mov[1]))
-        #retuner movement
+        # print("from: " + str(mov[0]) + ", to: " +str(mov[1]))
+  
         return mov
     
     def snapPicture(self):
@@ -135,12 +141,10 @@ class game():
         return string
         
     def main_task(self):
-        # input("enter for debug")
+
         m = self.newPicture()
         string = self.sendString(m)
-       #string = ("b3333;100,200,200,300") #string format
-       # string = (6,0,5,0) #FOR DEBUG 
-        # print(string)
+
         return string
          
         
