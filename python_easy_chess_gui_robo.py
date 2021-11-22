@@ -702,7 +702,7 @@ class EasyChessGui:
         
         #Connect to robot
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.IP = "127.0.0.1"
+        self.IP = "192.168.12.57"
         self.data = ""
         self.port = 2222
         self.connected = True #FOR DEBUG!!! skal være false
@@ -2728,7 +2728,7 @@ class EasyChessGui:
         if ans =="OKBilde":
             self.go.snapPicture()
         else:
-            print("What tha fuck?")
+            print("Error")
             
         self.send_msg("k")
         
