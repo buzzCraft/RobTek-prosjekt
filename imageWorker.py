@@ -18,14 +18,14 @@ class ImgWorker():
         self.imageArray = []
         self.cleanArray = []
         self.boundaries = [ #BGR
-       	([80, 70, 248], [10, 10, 170], ["orange"]),  #Orange
-       	([45, 105, 90], [15, 70, 50], ["grønn"]),  #Grønn
-       	([40, 110,160], [5, 65 ,100], ["gul"]), #Gul
+       	([80, 70, 255], [10, 10, 170], ["orange"]),  #Orange
+       	([60, 130, 100], [15, 70, 50], ["grønn"]),  #Grønn
+       	([45, 130,190], [5, 65 ,101], ["gul"]), #Gul
        	([120,70,45], [50,35,15], ["blå"]), #lyse blå
-        ([80,18,165], [48,5,118], ["rosa"]), #rosa
-        ([15,10,120], [0,1,80], ["rød"]), #rød     
+        ([95,25,190], [48,5,118], ["rosa"]), #rosa
+        ([25,20,150], [0,1,80], ["rød"]), #rød     
         ([130,125,155], [60,70,85], ["hvit"]), #hvit
-        ([49,50,70], [0, 0, 0], ["svart"]) #svart
+        ([50,60,85], [0, 0, 0], ["svart"]) #svart
          ]
         self.farger = ("orange", "grønn", "gul", "blå", "rosa", "rød")
         self.bakgrunn = ("hvit", "svart")
@@ -69,13 +69,13 @@ class ImgWorker():
         # for i in range(3):
         #     c[i]=int((int(c1[i])+int(c2[i])+int(c3[i])+int(c4[i])+int(c5[i]))/5)
         colArr = []
-        for i in range(10):
+        for i in range(5):
             colArr.append(img[(x-5)+i,y])
             colArr.append(img[x,(y-5)+i])
         for i in range(3):
-            for j in range(20):
+            for j in range(10):
                 c[i] = c[i] + int(colArr[j][i])
-            c[i] = c[i] / 20
+            c[i] = c[i] / 10
             
         
         
@@ -153,8 +153,8 @@ class ImgWorker():
                 move.append((xc,yc,color[0],shape))
                 # move.append(shape)
                 # print(xc,yc)
-                cv2.imshow('after', after)
-                cv2.waitKey(0)
+                # cv2.imshow('after', after)
+                # cv2.waitKey(0)
                 # self.getColor(black_bg,(xc,yc))
                 
 
@@ -183,8 +183,8 @@ class ImgWorker():
         #Hvis ingen -> Sirkel
         i -= 1
 
-        p1 = img[x+i,(y+i-5)]
-        p2 = img[x+i,(y-i+5)]
+        p1 = img[x+i,(y+i-10)]
+        p2 = img[x+i,(y-i+10)]
 
         if self.pixInColor(p1, color):
             shape = "firkant"

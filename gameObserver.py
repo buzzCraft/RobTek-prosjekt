@@ -62,10 +62,10 @@ class game():
             
         return fro,to
     
-    def newPicture(self, pic): #Ta bilde og beregn bevegelse
+    def newPicture(self): #Ta bilde og beregn bevegelse
         
 
-        self.imgWork.addImg(iW.Image(pic)) #legg bildet til i imageworker
+        self.snapPicture()
 
         move = self.findMove()  #finn bevegelsen
 
