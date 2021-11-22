@@ -44,8 +44,12 @@ class game():
     def fromTo(self, move):
         #Forsøker å finne ut hvilken rettning det flyttes
         #Forløpig har vi mest suksess med å se om senter er hvitt / svart
+        
+            
         fro = [0,0]
         to = [0,0]
+        if (len(move)<2):
+            return fro,to
         if (move[0][2] in self.bakgrunn): #hvis før ste x,y par har hvit/svart bakgrunn
             fro = move[0][0],move[0][1]     #så er det fra
             to = move[1][0],move[1][1]
@@ -143,6 +147,7 @@ class game():
     def main_task(self):
 
         m = self.newPicture()
+
         string = self.sendString(m)
 
         return string
