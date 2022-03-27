@@ -15,7 +15,7 @@
 
 <!-- PROJECT LOGO -->
 <br />
-<h3 align="center">Dave3625 - Lab3</h3>
+<h3 align="center">Robot Chess</h3>
 <p align="center">
   <a href="https://github.com/buzzCraft/RobTek-prosjekt/">
     <img src="img/header.jpeg" alt="Robot CHess" width="auto" height="auto">
